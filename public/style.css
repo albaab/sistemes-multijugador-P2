@@ -172,8 +172,8 @@ h1 {
 }
 
 #areaDeJoc {
-    width: 640px;
-    height: 640px;
+    width: 400px;
+    height: 400px;
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     position: relative;
     margin: 0 auto;
@@ -184,8 +184,8 @@ h1 {
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
     overflow: hidden;
     display: grid;
-    grid-template-columns: repeat(16, 40px);
-    grid-template-rows: repeat(16, 40px);
+    grid-template-columns: repeat(10, 40px);
+    grid-template-rows: repeat(10, 40px);
 }
 
 #areaDeJoc::before {
@@ -202,8 +202,8 @@ h1 {
 }
 
 #jugador1 {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: linear-gradient(145deg, #ff4757, #ff3742);
     position: absolute;
     display: none;
@@ -234,8 +234,8 @@ h1 {
 }
 
 #jugador2 {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: linear-gradient(145deg, #3742fa, #2f3542);
     position: absolute;
     display: none;
@@ -307,10 +307,12 @@ h1 {
     }
     
     #areaDeJoc {
-        width: 90vw;
-        height: 90vw;
-        max-width: 500px;
-        max-height: 500px;
+        width: 400px;
+        height: 400px;
+        min-width: 400px;
+        min-height: 400px;
+        max-width: 400px;
+        max-height: 400px;
     }
     
     #jugador1, #jugador2 {

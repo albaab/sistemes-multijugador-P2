@@ -57,10 +57,10 @@ switch ($accio) {
         $color = $_GET['color'];
 
         // Validar que les coordenades estan dins dels límits
-        $x = max(0, min(600, $x));
-        $y = max(0, min(600, $y));
-        $row = max(0, min(15, $row));
-        $col = max(0, min(15, $col));
+        $x = max(0, min(360, $x));
+        $y = max(0, min(360, $y));
+        $row = max(0, min(9, $row));
+        $col = max(0, min(9, $col));
 
         $stmt = $db->prepare('SELECT player1, player2 FROM games WHERE game_id = :game_id');
         $stmt->bindValue(':game_id', $game_id);

@@ -14,8 +14,8 @@ const divJoc = document.getElementById('joc');
 const areaDeJoc = document.getElementById('areaDeJoc');
 const gameTimerElement = document.getElementById('gameTimer');
 
-// Mida del grid: 16x16 caselles de 40px
-const GRID_SIZE = 16;
+// Mida del grid: 10x10 caselles de 40px
+const GRID_SIZE = 10;
 const CELL_SIZE = 40;
 
 // Crear el grid de caselles
