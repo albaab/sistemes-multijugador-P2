@@ -1,1 +1,3 @@
-sqlite3 games.db "DROP TABLE IF EXISTS games; CREATE TABLE games (game_id TEXT PRIMARY KEY, player1 TEXT, player2 TEXT, points_player1 INTEGER DEFAULT 0, points_player2 INTEGER DEFAULT 0, circle_x INTEGER DEFAULT NULL, circle_y INTEGER DEFAULT NULL, circle_visible INTEGER DEFAULT 0, next_circle_time INTEGER DEFAULT NULL, player1_x INTEGER DEFAULT 320, player1_y INTEGER DEFAULT 320, player2_x INTEGER DEFAULT 320, player2_y INTEGER DEFAULT 320, winner TEXT);"
+sqlite3 games.db "DROP TABLE IF EXISTS games; CREATE TABLE games (game_id TEXT PRIMARY KEY, player1 TEXT, player2 TEXT, player1_x INTEGER DEFAULT 0, player1_y INTEGER DEFAULT 0, player2_x INTEGER DEFAULT 0, player2_y INTEGER DEFAULT 0);"
+
+sqlite3 games.db "CREATE TABLE IF NOT EXISTS painted_cells (id INTEGER PRIMARY KEY AUTOINCREMENT, game_id TEXT, row INTEGER, col INTEGER, color TEXT, FOREIGN KEY(game_id) REFERENCES games(game_id));"

@@ -54,6 +54,36 @@ h1 {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+#scoreBoard {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.score-item {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.score-label {
+    margin-right: 8px;
+}
+
+#scoreRed {
+    color: #ff4757;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+#scoreBlue {
+    color: #3742fa;
+    text-shadow: 0 0 10px rgba(55, 66, 250, 0.5);
+}
+
 #areaDeJoc {
     width: 640px;
     height: 640px;
@@ -66,6 +96,9 @@ h1 {
         0 8px 32px rgba(0, 0, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
     overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(16, 40px);
+    grid-template-rows: repeat(16, 40px);
 }
 
 #areaDeJoc::before {
@@ -82,18 +115,19 @@ h1 {
 }
 
 #jugador1 {
-    width: 50px;
-    height: 50px;
+    width: 36px;
+    height: 36px;
     background: linear-gradient(145deg, #ff4757, #ff3742);
     position: absolute;
     display: none;
-    z-index: 10;
-    border-radius: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 20;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
     box-shadow: 
         0 4px 15px rgba(255, 71, 87, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    transition: all 0.1s ease;
+    transition: all 0.2s ease;
+    margin: 2px;
 }
 
 #jugador1::after {
@@ -114,18 +148,19 @@ h1 {
 }
 
 #jugador2 {
-    width: 50px;
-    height: 50px;
+    width: 36px;
+    height: 36px;
     background: linear-gradient(145deg, #3742fa, #2f3542);
     position: absolute;
     display: none;
-    z-index: 10;
-    border-radius: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 20;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
     box-shadow: 
         0 4px 15px rgba(55, 66, 250, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    transition: all 0.1s ease;
+    transition: all 0.2s ease;
+    margin: 2px;
 }
 
 #jugador2::after {
@@ -236,4 +271,55 @@ h1 {
         linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
+    z-index: 1;
+}
+
+/* Caselles pintades amb efectes brillants */
+.grid-cell {
+    width: 40px;
+    height: 40px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.painted-red {
+    background: linear-gradient(145deg, #ff4757, #ff3742);
+    box-shadow: 
+        0 0 20px rgba(255, 71, 87, 0.6),
+        inset 0 0 20px rgba(255, 255, 255, 0.2);
+    animation: glowRed 2s ease-in-out infinite alternate;
+}
+
+.painted-blue {
+    background: linear-gradient(145deg, #3742fa, #2f3542);
+    box-shadow: 
+        0 0 20px rgba(55, 66, 250, 0.6),
+        inset 0 0 20px rgba(255, 255, 255, 0.2);
+    animation: glowBlue 2s ease-in-out infinite alternate;
+}
+
+@keyframes glowRed {
+    from {
+        box-shadow: 
+            0 0 20px rgba(255, 71, 87, 0.6),
+            inset 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+    to {
+        box-shadow: 
+            0 0 30px rgba(255, 71, 87, 0.8),
+            inset 0 0 25px rgba(255, 255, 255, 0.3);
+    }
+}
+
+@keyframes glowBlue {
+    from {
+        box-shadow: 
+            0 0 20px rgba(55, 66, 250, 0.6),
+            inset 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+    to {
+        box-shadow: 
+            0 0 30px rgba(55, 66, 250, 0.8),
+            inset 0 0 25px rgba(255, 255, 255, 0.3);
+    }
 }

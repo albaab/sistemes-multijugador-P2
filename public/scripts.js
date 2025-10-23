@@ -1,10 +1,96 @@
 let idJoc, idJugador;
 let jocData = {};
+let gridCells = {};
+let scoreRed = 0;
+let scoreBlue = 0;
 
 const jugador1 = document.getElementById('jugador1');
 const jugador2 = document.getElementById('jugador2');
 const textEstat = document.getElementById('estat');
 const divJoc = document.getElementById('joc');
+const areaDeJoc = document.getElementById('areaDeJoc');
+
+// Mida del grid: 16x16 caselles de 40px
+const GRID_SIZE = 16;
+const CELL_SIZE = 40;
+
+// Crear el grid de caselles
+function crearGrid() {
+    areaDeJoc.innerHTML = '';
+    gridCells = {};
+    
+    for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            areaDeJoc.appendChild(cell);
+            
+            const cellKey = `${row}-${col}`;
+            gridCells[cellKey] = {
+                element: cell,
+                painted: false,
+                color: null
+            };
+        }
+    }
+    
+    // Afegir els jugadors després del grid
+    areaDeJoc.appendChild(jugador1);
+    areaDeJoc.appendChild(jugador2);
+}
+
+// Convertir posició de píxels a coordenades de grid
+function pixelsToGrid(x, y) {
+    return {
+        col: Math.floor(x / CELL_SIZE),
+        row: Math.floor(y / CELL_SIZE)
+    };
+}
+
+// Convertir coordenades de grid a píxels
+function gridToPixels(row, col) {
+    return {
+        x: col * CELL_SIZE,
+        y: row * CELL_SIZE
+    };
+}
+
+// Pintar una casella
+function pintarCasella(row, col, color) {
+    const cellKey = `${row}-${col}`;
+    if (gridCells[cellKey] && (!gridCells[cellKey].painted || gridCells[cellKey].color !== color)) {
+        const cell = gridCells[cellKey].element;
+        
+        // Eliminar classe anterior si existeix
+        cell.classList.remove('painted-red', 'painted-blue');
+        
+        // Afegir nova classe
+        const className = color === 'red' ? 'painted-red' : 'painted-blue';
+        cell.classList.add(className);
+        
+        // Actualitzar puntuació només si la casella no estava pintada del mateix color
+        if (gridCells[cellKey].color !== color) {
+            if (gridCells[cellKey].painted && gridCells[cellKey].color) {
+                // Treure punt del color anterior
+                if (gridCells[cellKey].color === 'red') scoreRed--;
+                else scoreBlue--;
+            }
+            
+            // Afegir punt al nou color
+            if (color === 'red') scoreRed++;
+            else scoreBlue++;
+            
+            // Actualitzar puntuació a la pantalla
+            document.getElementById('scoreRed').textContent = scoreRed;
+            document.getElementById('scoreBlue').textContent = scoreBlue;
+        }
+        
+        gridCells[cellKey].painted = true;
+        gridCells[cellKey].color = color;
+    }
+}
 
 // Connectar al servidor del joc
 function unirseAlJoc() {
@@ -28,45 +114,59 @@ let teclesPremudes = new Set();
 function gestionarTecles(event) {
     if (!idJugador || teclesPremudes.has(event.key)) return;
 
-    const velocitat = 10;
-    let nouX, nouY;
     let esJugador1 = false;
     let esJugador2 = false;
     let jugadorElement;
+    let currentPos;
 
     // Determinar quin jugador ets
     if (jocData.player1 === idJugador) {
         esJugador1 = true;
         jugadorElement = jugador1;
-        nouX = parseInt(jugador1.style.left) || 320;
-        nouY = parseInt(jugador1.style.top) || 320;
+        currentPos = pixelsToGrid(
+            parseInt(jugador1.style.left) || 0,
+            parseInt(jugador1.style.top) || 0
+        );
     } else if (jocData.player2 === idJugador) {
         esJugador2 = true;
         jugadorElement = jugador2;
-        nouX = parseInt(jugador2.style.left) || 320;
-        nouY = parseInt(jugador2.style.top) || 320;
+        currentPos = pixelsToGrid(
+            parseInt(jugador2.style.left) || 0,
+            parseInt(jugador2.style.top) || 0
+        );
     } else {
         return; // No ets cap dels jugadors
     }
 
-    // Controls WASD per tots dos jugadors
+    let newRow = currentPos.row;
+    let newCol = currentPos.col;
     let moved = false;
+
+    // Controls WASD per moure's per caselles
     switch(event.key.toLowerCase()) {
         case 'w':
-            nouY = Math.max(0, nouY - velocitat);
-            moved = true;
+            if (newRow > 0) {
+                newRow--;
+                moved = true;
+            }
             break;
         case 's':
-            nouY = Math.min(590, nouY + velocitat); // 640 - 50 (mida del jugador)
-            moved = true;
+            if (newRow < GRID_SIZE - 1) {
+                newRow++;
+                moved = true;
+            }
             break;
         case 'a':
-            nouX = Math.max(0, nouX - velocitat);
-            moved = true;
+            if (newCol > 0) {
+                newCol--;
+                moved = true;
+            }
             break;
         case 'd':
-            nouX = Math.min(590, nouX + velocitat); // 640 - 50 (mida del jugador)
-            moved = true;
+            if (newCol < GRID_SIZE - 1) {
+                newCol++;
+                moved = true;
+            }
             break;
         default:
             return;
@@ -77,13 +177,20 @@ function gestionarTecles(event) {
         jugadorElement.classList.add('key-pressed');
         teclesPremudes.add(event.key);
 
-        // Actualitzar posició localment amb transició suau
-        jugadorElement.style.left = nouX + 'px';
-        jugadorElement.style.top = nouY + 'px';
+        // Convertir a píxels
+        const newPixelPos = gridToPixels(newRow, newCol);
+
+        // Actualitzar posició localment
+        jugadorElement.style.left = newPixelPos.x + 'px';
+        jugadorElement.style.top = newPixelPos.y + 'px';
+
+        // Pintar la casella
+        const color = esJugador1 ? 'red' : 'blue';
+        pintarCasella(newRow, newCol, color);
 
         // Enviar nova posició al servidor
         const playerNum = esJugador1 ? 1 : 2;
-        fetch(`game.php?action=move&game_id=${idJoc}&player=${playerNum}&x=${nouX}&y=${nouY}`)
+        fetch(`game.php?action=move&game_id=${idJoc}&player=${playerNum}&x=${newPixelPos.x}&y=${newPixelPos.y}&row=${newRow}&col=${newCol}&color=${color}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
@@ -156,12 +263,20 @@ function comprovarEstatDelJoc() {
                 jugador2.style.display = 'block';
             }
 
+            // Sincronitzar caselles pintades
+            if (joc.painted_cells) {
+                joc.painted_cells.forEach(cell => {
+                    pintarCasella(cell.row, cell.col, cell.color);
+                });
+            }
+
             setTimeout(comprovarEstatDelJoc, 100);
         });
 }
 
 // Iniciar el joc quan la pàgina estigui carregada
 document.addEventListener('DOMContentLoaded', function() {
+    crearGrid();
     unirseAlJoc();
 });
 

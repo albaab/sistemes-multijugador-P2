@@ -29,14 +29,14 @@ switch ($accio) {
         if ($joc_existent) {
             // Unir-se al joc existent com a player2
             $game_id = $joc_existent['game_id'];
-            $stmt = $db->prepare('UPDATE games SET player2 = :player_id, player2_x = 320, player2_y = 320 WHERE game_id = :game_id');
+            $stmt = $db->prepare('UPDATE games SET player2 = :player_id, player2_x = 0, player2_y = 0 WHERE game_id = :game_id');
             $stmt->bindValue(':player_id', $player_id);
             $stmt->bindValue(':game_id', $game_id);
             $stmt->execute();
         } else {
             // Crear un nou joc com a player1
             $game_id = uniqid();
-            $stmt = $db->prepare('INSERT INTO games (game_id, player1, player1_x, player1_y, player2_x, player2_y) VALUES (:game_id, :player_id, 320, 320, 320, 320)');
+            $stmt = $db->prepare('INSERT INTO games (game_id, player1, player1_x, player1_y, player2_x, player2_y) VALUES (:game_id, :player_id, 0, 0, 0, 0)');
             $stmt->bindValue(':game_id', $game_id);
             $stmt->bindValue(':player_id', $player_id);
             $stmt->execute();
@@ -51,10 +51,15 @@ switch ($accio) {
         $player_num = intval($_GET['player']);
         $x = intval($_GET['x']);
         $y = intval($_GET['y']);
+        $row = intval($_GET['row']);
+        $col = intval($_GET['col']);
+        $color = $_GET['color'];
 
         // Validar que les coordenades estan dins dels límits
         $x = max(0, min(600, $x));
         $y = max(0, min(600, $y));
+        $row = max(0, min(15, $row));
+        $col = max(0, min(15, $col));
 
         $stmt = $db->prepare('SELECT player1, player2 FROM games WHERE game_id = :game_id');
         $stmt->bindValue(':game_id', $game_id);
@@ -68,6 +73,15 @@ switch ($accio) {
                 $stmt->bindValue(':y', $y);
                 $stmt->bindValue(':game_id', $game_id);
                 $stmt->execute();
+                
+                // Guardar casella pintada
+                $stmt = $db->prepare('INSERT OR REPLACE INTO painted_cells (game_id, row, col, color) VALUES (:game_id, :row, :col, :color)');
+                $stmt->bindValue(':game_id', $game_id);
+                $stmt->bindValue(':row', $row);
+                $stmt->bindValue(':col', $col);
+                $stmt->bindValue(':color', $color);
+                $stmt->execute();
+                
                 echo json_encode(['success' => true]);
             } elseif ($player_num === 2 && $joc['player2'] === $player_id) {
                 $stmt = $db->prepare('UPDATE games SET player2_x = :x, player2_y = :y WHERE game_id = :game_id');
@@ -75,6 +89,15 @@ switch ($accio) {
                 $stmt->bindValue(':y', $y);
                 $stmt->bindValue(':game_id', $game_id);
                 $stmt->execute();
+                
+                // Guardar casella pintada
+                $stmt = $db->prepare('INSERT OR REPLACE INTO painted_cells (game_id, row, col, color) VALUES (:game_id, :row, :col, :color)');
+                $stmt->bindValue(':game_id', $game_id);
+                $stmt->bindValue(':row', $row);
+                $stmt->bindValue(':col', $col);
+                $stmt->bindValue(':color', $color);
+                $stmt->execute();
+                
                 echo json_encode(['success' => true]);
             } else {
                 echo json_encode(['error' => 'Jugador no autoritzat per moure']);
@@ -94,6 +117,12 @@ switch ($accio) {
         if (!$joc) {
             echo json_encode(['error' => 'Joc no trobat']);
         } else {
+            // Obtenir caselles pintades
+            $stmt_cells = $db->prepare('SELECT row, col, color FROM painted_cells WHERE game_id = :game_id');
+            $stmt_cells->bindValue(':game_id', $game_id);
+            $stmt_cells->execute();
+            $painted_cells = $stmt_cells->fetchAll(PDO::FETCH_ASSOC);
+
             echo json_encode([
                 'player1' => $joc['player1'],
                 'player2' => $joc['player2'],
@@ -104,7 +133,8 @@ switch ($accio) {
                 'player2_pos' => [
                     'x' => $joc['player2_x'],
                     'y' => $joc['player2_y']
-                ]
+                ],
+                'painted_cells' => $painted_cells
             ]);
         }
         break;
