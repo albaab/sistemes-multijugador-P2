@@ -29,9 +29,10 @@ switch ($accio) {
         if ($joc_existent) {
             // Unir-se al joc existent com a player2
             $game_id = $joc_existent['game_id'];
-            $stmt = $db->prepare('UPDATE games SET player2 = :player_id, player2_x = 0, player2_y = 0 WHERE game_id = :game_id');
+            $stmt = $db->prepare('UPDATE games SET player2 = :player_id, player2_x = 0, player2_y = 0, game_start_time = :start_time WHERE game_id = :game_id');
             $stmt->bindValue(':player_id', $player_id);
             $stmt->bindValue(':game_id', $game_id);
+            $stmt->bindValue(':start_time', time());
             $stmt->execute();
         } else {
             // Crear un nou joc com a player1
@@ -117,6 +118,21 @@ switch ($accio) {
         if (!$joc) {
             echo json_encode(['error' => 'Joc no trobat']);
         } else {
+            // Comprovar si el joc ha acabat per temps (30 segons)
+            $game_started = $joc['player1'] && $joc['player2'] && $joc['game_start_time'];
+            $game_ended = false;
+            
+            if ($game_started && !$joc['game_ended']) {
+                $elapsed_time = time() - $joc['game_start_time'];
+                if ($elapsed_time >= 30) {
+                    // Finalitzar joc automàticament
+                    $stmt_end = $db->prepare('UPDATE games SET game_ended = 1 WHERE game_id = :game_id');
+                    $stmt_end->bindValue(':game_id', $game_id);
+                    $stmt_end->execute();
+                    $game_ended = true;
+                }
+            }
+            
             // Obtenir caselles pintades
             $stmt_cells = $db->prepare('SELECT row, col, color FROM painted_cells WHERE game_id = :game_id');
             $stmt_cells->bindValue(':game_id', $game_id);
@@ -134,9 +150,23 @@ switch ($accio) {
                     'x' => $joc['player2_x'],
                     'y' => $joc['player2_y']
                 ],
-                'painted_cells' => $painted_cells
+                'painted_cells' => $painted_cells,
+                'game_started' => $game_started,
+                'game_ended' => $joc['game_ended'] || $game_ended
             ]);
         }
+        break;
+
+    case 'endgame':
+        $game_id = $_GET['game_id'];
+        $winner = $_GET['winner'] ?? 'draw';
+        
+        $stmt = $db->prepare('UPDATE games SET game_ended = 1, winner = :winner WHERE game_id = :game_id');
+        $stmt->bindValue(':game_id', $game_id);
+        $stmt->bindValue(':winner', $winner);
+        $stmt->execute();
+        
+        echo json_encode(['success' => true]);
         break;
 }
 ?>

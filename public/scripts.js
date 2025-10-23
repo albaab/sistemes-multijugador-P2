@@ -3,12 +3,16 @@ let jocData = {};
 let gridCells = {};
 let scoreRed = 0;
 let scoreBlue = 0;
+let gameTimer = 30;
+let timerInterval = null;
+let gameEnded = false;
 
 const jugador1 = document.getElementById('jugador1');
 const jugador2 = document.getElementById('jugador2');
 const textEstat = document.getElementById('estat');
 const divJoc = document.getElementById('joc');
 const areaDeJoc = document.getElementById('areaDeJoc');
+const gameTimerElement = document.getElementById('gameTimer');
 
 // Mida del grid: 16x16 caselles de 40px
 const GRID_SIZE = 16;
@@ -92,6 +96,91 @@ function pintarCasella(row, col, color) {
     }
 }
 
+// Recalcular puntuació total basada en les caselles actuals
+function recalcularPuntuacio() {
+    scoreRed = 0;
+    scoreBlue = 0;
+    
+    // Comptar totes les caselles pintades
+    for (let cellKey in gridCells) {
+        if (gridCells[cellKey].painted) {
+            if (gridCells[cellKey].color === 'red') {
+                scoreRed++;
+            } else if (gridCells[cellKey].color === 'blue') {
+                scoreBlue++;
+            }
+        }
+    }
+    
+    // Actualitzar display
+    document.getElementById('scoreRed').textContent = scoreRed;
+    document.getElementById('scoreBlue').textContent = scoreBlue;
+}
+
+// Funcions del cronòmetre
+function iniciarCronòmetre() {
+    gameTimer = 30;
+    gameEnded = false;
+    actualitzarCronòmetre();
+    
+    timerInterval = setInterval(() => {
+        gameTimer--;
+        actualitzarCronòmetre();
+        
+        if (gameTimer <= 0) {
+            finalitzarJoc();
+        }
+    }, 1000);
+}
+
+function actualitzarCronòmetre() {
+    gameTimerElement.textContent = `⏱️ ${gameTimer}`;
+    
+    // Efecte visual quan queden menys de 10 segons
+    if (gameTimer <= 10) {
+        gameTimerElement.classList.add('warning');
+    } else {
+        gameTimerElement.classList.remove('warning');
+    }
+}
+
+function aturarCronòmetre() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+function finalitzarJoc() {
+    gameEnded = true;
+    aturarCronòmetre();
+    
+    // Determinar guanyador
+    let resultat = '';
+    let titol = '';
+    
+    if (scoreRed > scoreBlue) {
+        titol = '🎉 Jugador 1 Guanya!';
+        resultat = `El <strong style="color: #ff4757;">Jugador 1 (Vermell)</strong> ha guanyat amb <strong>${scoreRed}</strong> caselles!<br>
+                   Jugador 2 (Blau): ${scoreBlue} caselles`;
+    } else if (scoreBlue > scoreRed) {
+        titol = '🎉 Jugador 2 Guanya!';
+        resultat = `El <strong style="color: #3742fa;">Jugador 2 (Blau)</strong> ha guanyat amb <strong>${scoreBlue}</strong> caselles!<br>
+                   Jugador 1 (Vermell): ${scoreRed} caselles`;
+    } else {
+        titol = '🤝 Empat!';
+        resultat = `Empat perfecte! Tots dos jugadors tenen <strong>${scoreRed}</strong> caselles pintades.`;
+    }
+    
+    // Mostrar modal de final de joc
+    document.getElementById('gameEndTitle').innerHTML = titol;
+    document.getElementById('gameEndMessage').innerHTML = resultat;
+    document.getElementById('gameEndModal').style.display = 'flex';
+    
+    // Marcar joc com acabat al servidor
+    fetch(`game.php?action=endgame&game_id=${idJoc}&winner=${scoreRed > scoreBlue ? 'red' : scoreBlue > scoreRed ? 'blue' : 'draw'}`);
+}
+
 // Connectar al servidor del joc
 function unirseAlJoc() {
     fetch('game.php?action=join')
@@ -109,10 +198,16 @@ function unirseAlJoc() {
 
 // Variables per gestionar efectes visuals
 let teclesPremudes = new Set();
+let ultimMoviment = 0;
+const COOLDOWN_MOVIMENT = 150; // Reduït per moviment més ràpid
 
 // Gestionar les tecles per moure els jugadors
 function gestionarTecles(event) {
-    if (!idJugador || teclesPremudes.has(event.key)) return;
+    if (!idJugador || teclesPremudes.has(event.key) || gameEnded) return;
+
+    // Evitar moviments massa ràpids
+    const ara = Date.now();
+    if (ara - ultimMoviment < COOLDOWN_MOVIMENT) return;
 
     let esJugador1 = false;
     let esJugador2 = false;
@@ -173,18 +268,18 @@ function gestionarTecles(event) {
     }
 
     if (moved) {
-        // Efecte visual de pressió de tecla
-        jugadorElement.classList.add('key-pressed');
+        // Actualitzar temps de l'últim moviment
+        ultimMoviment = Date.now();
         teclesPremudes.add(event.key);
 
         // Convertir a píxels
         const newPixelPos = gridToPixels(newRow, newCol);
 
-        // Actualitzar posició localment
+        // Moviment instantani - actualitzar posició
         jugadorElement.style.left = newPixelPos.x + 'px';
         jugadorElement.style.top = newPixelPos.y + 'px';
 
-        // Pintar la casella
+        // Pintar la casella IMMEDIATAMENT quan arribem
         const color = esJugador1 ? 'red' : 'blue';
         pintarCasella(newRow, newCol, color);
 
@@ -204,8 +299,6 @@ function gestionarTecles(event) {
 
 // Gestionar quan es deixa anar la tecla
 function gestionarTeclesUp(event) {
-    const jugadorElement = jocData.player1 === idJugador ? jugador1 : jugador2;
-    jugadorElement.classList.remove('key-pressed');
     teclesPremudes.delete(event.key);
 }
 
@@ -237,6 +330,11 @@ function comprovarEstatDelJoc() {
                 if (joc.player2) {
                     textEstat.innerHTML = '🎮 Joc en curs... Mou-te amb WASD!';
                     divJoc.style.display = 'block';
+                    
+                    // Iniciar cronòmetre si tots dos jugadors estan connectats i no ha començat
+                    if (!timerInterval && !gameEnded && joc.game_started) {
+                        iniciarCronòmetre();
+                    }
                 } else {
                     textEstat.innerHTML = '⏳ Ets el Jugador 1. Esperant el Jugador 2...';
                     textEstat.classList.add('loading');
@@ -245,9 +343,20 @@ function comprovarEstatDelJoc() {
                 textEstat.innerHTML = '🎮 Joc en curs... Mou-te amb WASD!';
                 textEstat.classList.remove('loading');
                 divJoc.style.display = 'block';
+                
+                // Iniciar cronòmetre si tots dos jugadors estan connectats i no ha començat
+                if (!timerInterval && !gameEnded && joc.game_started) {
+                    iniciarCronòmetre();
+                }
             } else {
                 textEstat.innerHTML = '👀 Espectant...';
                 divJoc.style.display = 'block';
+            }
+
+            // Comprovar si el joc ha acabat
+            if (joc.game_ended && !gameEnded) {
+                finalitzarJoc();
+                return;
             }
 
             // Mostrar posicions dels jugadors amb transicions suaus
@@ -278,6 +387,11 @@ function comprovarEstatDelJoc() {
 document.addEventListener('DOMContentLoaded', function() {
     crearGrid();
     unirseAlJoc();
+    
+    // Event listener per al botó de nou joc
+    document.getElementById('newGameBtn').addEventListener('click', function() {
+        location.reload(); // Recarregar la pàgina per començar un nou joc
+    });
 });
 
 // Afegir estils CSS per les tecles

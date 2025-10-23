@@ -12,6 +12,7 @@
 <body>
     <h1 id="estat">🎮 Connectant al joc...</h1>
     <div id="joc" class="game-container">
+        <div id="gameTimer">⏱️ 30</div>
         <p id="rolJugador"></p>
         <div id="areaDeJoc">
             <div id="jugador1"></div>
@@ -26,6 +27,14 @@
                 <span class="score-label">🔵 Blau:</span>
                 <span id="scoreBlue">0</span>
             </div>
+        </div>
+    </div>
+
+    <div id="gameEndModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 id="gameEndTitle">⏰ Temps Acabat!</h2>
+            <p id="gameEndMessage"></p>
+            <button id="newGameBtn">🎮 Nou Joc</button>
         </div>
     </div>
 
