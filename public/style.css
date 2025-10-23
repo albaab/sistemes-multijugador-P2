@@ -29,3 +29,34 @@
     display: none;
     z-index: 10;
 }
+
+#jugador1::after {
+    content: "1";
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#jugador2 {
+    width: 40px;
+    height: 40px;
+    background-color: blue;
+    position: absolute;
+    display: none;
+    z-index: 10;
+}
+
+#jugador2::after {
+    content: "2";
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
