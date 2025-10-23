@@ -1,0 +1,31 @@
+#joc {
+    display: none;
+}
+
+#areaDeJoc {
+    width: 640px;
+    height: 640px;
+    background-color: lightgray;
+    position: relative;
+    margin: 0 auto;
+    border: 2px solid black;
+}
+
+#cercle {
+    width: 50px;
+    height: 50px;
+    background-color: rgb(76, 89, 206);
+    border-radius: 50%;
+    position: absolute;
+    display: none;
+    cursor: pointer;
+}
+
+#jugador1 {
+    width: 40px;
+    height: 40px;
+    background-color: red;
+    position: absolute;
+    display: none;
+    z-index: 10;
+}

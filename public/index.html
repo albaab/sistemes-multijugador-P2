@@ -4,30 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Joc Multijugador de Tocar el Cercle</title>
-    <style>
-        #joc {
-            display: none;
-        }
-
-        #areaDeJoc {
-            width: 640px;
-            height: 640px;
-            background-color: lightgray;
-            position: relative;
-            margin: 0 auto;
-            border: 2px solid black;
-        }
-
-        #cercle {
-            width: 50px;
-            height: 50px;
-            background-color: red;
-            border-radius: 50%;
-            position: absolute;
-            display: none;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -35,6 +12,7 @@
     <div id="joc">
         <h2 id="puntuacio">Jugador 1: 0 | Jugador 2: 0</h2>
         <div id="areaDeJoc">
+            <div id="jugador1"></div>
             <div id="cercle"></div>
         </div>
     </div>
@@ -45,6 +23,7 @@
         let guanyador = null;
 
         const cercle = document.getElementById('cercle');
+        const jugador1 = document.getElementById('jugador1');
         const textEstat = document.getElementById('estat');
         const divJoc = document.getElementById('joc');
         const textPuntuacio = document.getElementById('puntuacio');
@@ -57,7 +36,60 @@
                     idJoc = data.game_id;
                     idJugador = data.player_id;
                     comprovarEstatDelJoc();
+                    
+                    // Afegir event listeners per al moviment si és el Jugador 1
+                    document.addEventListener('keydown', gestionarTecles);
                 });
+        }
+
+        // Gestionar les tecles per moure el Jugador 1
+        function gestionarTecles(event) {
+            // Només permetre moviment si ets el Jugador 1 i el joc està actiu
+            if (idJugador && idJugador === punts.player1 && !guanyador) {
+                const velocitat = 10;
+                let nouX = parseInt(jugador1.style.left) || 320;
+                let nouY = parseInt(jugador1.style.top) || 320;
+
+                switch(event.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                    case 'W':
+                        nouY = Math.max(0, nouY - velocitat);
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                    case 'S':
+                        nouY = Math.min(600, nouY + velocitat); // 640 - 40 (mida del quadrat)
+                        break;
+                    case 'ArrowLeft':
+                    case 'a':
+                    case 'A':
+                        nouX = Math.max(0, nouX - velocitat);
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                    case 'D':
+                        nouX = Math.min(600, nouX + velocitat); // 640 - 40 (mida del quadrat)
+                        break;
+                    default:
+                        return; // No fer res per altres tecles
+                }
+
+                // Actualitzar posició localment
+                jugador1.style.left = nouX + 'px';
+                jugador1.style.top = nouY + 'px';
+
+                // Enviar nova posició al servidor
+                fetch(`game.php?action=move&game_id=${idJoc}&x=${nouX}&y=${nouY}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error(data.error);
+                        }
+                    });
+
+                event.preventDefault();
+            }
         }
 
         // Comprovar l'estat del joc cada mig segon
@@ -72,6 +104,7 @@
 
                     punts = joc.points;
                     guanyador = joc.winner;
+                    punts.player1 = joc.player1; // Guardar IDs dels jugadors per comparar
 
                     textPuntuacio.innerText = `Jugador 1: ${punts[0]} | Jugador 2: ${punts[1]}`;
 
@@ -82,22 +115,30 @@
                             textEstat.innerText = 'Has perdut!';
                         }
                         cercle.style.display = 'none';
+                        jugador1.style.display = 'none';
                         return;
                     }
 
                     if (joc.player1 === idJugador) {
                         if (joc.player2) {
-                            textEstat.innerText = 'Joc en curs...';
+                            textEstat.innerText = 'Joc en curs... Usa WASD o fletxes per moure\'t';
                             divJoc.style.display = 'block';
                         } else {
                             textEstat.innerText = 'Ets el Jugador 1. Esperant el Jugador 2...';
                         }
                     } else if (joc.player2 === idJugador) {
-                        textEstat.innerText = 'Joc en curs...';
+                        textEstat.innerText = 'Joc en curs... Fes clic als cercles blaus!';
                         divJoc.style.display = 'block';
                     } else {
                         textEstat.innerText = 'Espectant...';
                         divJoc.style.display = 'block';
+                    }
+
+                    // Mostrar posició del Jugador 1
+                    if (joc.player1_pos) {
+                        jugador1.style.left = joc.player1_pos.x + 'px';
+                        jugador1.style.top = joc.player1_pos.y + 'px';
+                        jugador1.style.display = 'block';
                     }
 
                     // Gestionar la visualització del cercle
@@ -107,7 +148,7 @@
                         amagarCercle();
                     }
 
-                    setTimeout(comprovarEstatDelJoc, 500);
+                    setTimeout(comprovarEstatDelJoc, 100); // Més frequent per moviment suau
                 });
         }
 
@@ -125,21 +166,21 @@
             cercle.onclick = null;
         }
 
-        // Gestionar el clic al cercle
+        // Gestionar el clic al cercle (només Jugador 2)
         function gestionarClickAlCercle() {
-            fetch(`game.php?action=click&game_id=${idJoc}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    }
-                    // El cercle es mostrarà i els punts s'actualitzaran en la següent comprovació d'estat
-                });
+            if (idJugador && punts.player1 !== idJugador) { // Només si no ets el Jugador 1
+                fetch(`game.php?action=click&game_id=${idJoc}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        }
+                    });
+            }
         }
 
         // Iniciar el joc unint-se
         unirseAlJoc();
     </script>
 </body>
-
 </html>
